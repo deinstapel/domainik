@@ -1,0 +1,10 @@
+apiVersion: dns.deinstapel.de/v1
+kind: Domain
+metadata:
+  name: test-domain
+spec:
+  nodeSelector:
+     node-role.kubernetes.io/worker: ""
+  records:
+    - "betadab.com"
+    - "*.betadab.com"
