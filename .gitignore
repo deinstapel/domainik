@@ -1,5 +1,5 @@
 .idea
 domainik-binary
 kubernetes/
-!kuberneted/crds.yaml
-!kuberneted/operator.yaml
+!kubernetes/crds.yaml
+!kubernetes/operator.yaml
