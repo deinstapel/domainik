@@ -18,6 +18,7 @@ import (
 
 func init() {
 	k8s.Register("dns.deinstapel.de", "v1", "domains", false, &domainik.Domain{})
+	k8s.Register("dns.deinstapel.de", "v1", "domainmanagers", false, &domainik.DomainManager{})
 }
 
 func watchChanges(
@@ -53,7 +54,7 @@ func watchChanges(
 	}
 }
 
-func watchNodeChanges(ctx context.Context, kubernetesClient *k8s.Client, watchCombinator *domainik.WatchCombinator) error {
+func watchNodeChanges(ctx context.Context, kubernetesClient *k8s.Client, watchCombinator *domainik.EventHandler) error {
 
 	return watchChanges(
 		ctx,
@@ -70,7 +71,7 @@ func watchNodeChanges(ctx context.Context, kubernetesClient *k8s.Client, watchCo
 
 }
 
-func watchDomainChanges(ctx context.Context, kubernetesClient *k8s.Client, watchCombinator *domainik.WatchCombinator) error {
+func watchDomainChanges(ctx context.Context, kubernetesClient *k8s.Client, watchCombinator *domainik.EventHandler) error {
 
 	return watchChanges(
 		ctx,
@@ -82,6 +83,22 @@ func watchDomainChanges(ctx context.Context, kubernetesClient *k8s.Client, watch
 		func(eventType string, resource k8s.Resource) {
 			domain := resource.(*domainik.Domain)
 			watchCombinator.ProcessDomain(eventType, domain)
+		},
+	)
+}
+
+func watchDomainManagerChanges(ctx context.Context, kubernetesClient *k8s.Client, eventHandler *domainik.EventHandler) error {
+
+	return watchChanges(
+		ctx,
+		kubernetesClient,
+		func() k8s.Resource {
+			var domainManager domainik.DomainManager
+			return &domainManager
+		},
+		func(eventType string, resource k8s.Resource) {
+			domainManager := resource.(*domainik.DomainManager)
+			eventHandler.ProcessDomainManager(eventType, domainManager)
 		},
 	)
 }
@@ -99,10 +116,10 @@ func main() {
 
 	domainManagers := make([]domainmanager.DomainManager, 0)
 
-	route53DomainManager := domainmanager.CreateRoute53RouteHandler("", "")
+	route53DomainManager := domainmanager.CreateRoute53RouteManager("", "")
 	domainManagers = append(domainManagers, route53DomainManager)
 
-	watchCombinator := domainik.CreateWatchCombinator(logger, domainManagers)
+	watchCombinator := domainik.CreateEventHandler(logger, client)
 
 	watchContext := context.Background()
 	watchContext, cancelWatchContext := context.WithCancel(watchContext)
@@ -131,6 +148,17 @@ func main() {
 		err := watchNodeChanges(watchContext, client, watchCombinator)
 		if err != nil {
 			logger.WithError(err).Error("Failed to watch Node changes")
+			stopApplication()
+		}
+
+		wg.Done()
+	}()
+
+	wg.Add(1)
+	go func() {
+		err := watchDomainManagerChanges(watchContext, client, watchCombinator)
+		if err != nil {
+			logger.WithError(err).Error("Failed to watch DomainManager changes")
 			stopApplication()
 		}
 

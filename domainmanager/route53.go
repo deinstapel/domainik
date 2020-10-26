@@ -8,37 +8,31 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/route53"
 	"github.com/sirupsen/logrus"
-	"os"
 	"strings"
 )
 
-type Route53DomainHandler struct {
+type Route53DomainManager struct {
 	route53Api *route53.Route53
 	hostedZoneCache map[string]*route53.HostedZone
 	logger *logrus.Entry
 }
 
 func unescapeRoute53URL(s string) string {
-
 	retS := s
-
 	if strings.HasSuffix(s, ".") {
 		retS = strings.TrimSuffix(s, ".")
 	}
-
 	return strings.ReplaceAll(retS, "\\052", "*")
-
-
 }
 
-func (domainHandler *Route53DomainHandler) GetHostedZoneForDomain(domain string) (*route53.HostedZone, error){
+func (d *Route53DomainManager) GetHostedZoneForDomain(domain string) (*route53.HostedZone, error){
 	domainParts := strings.Split(domain, ".")
 	dnsName := fmt.Sprintf("%s.%s.", domainParts[len(domainParts)-2], domainParts[len(domainParts)-1])
-	if cachedHostedZone, ok := domainHandler.hostedZoneCache[dnsName]; ok {
+	if cachedHostedZone, ok := d.hostedZoneCache[dnsName]; ok {
 		return cachedHostedZone, nil
 	}
 
-	hostedZones, err := domainHandler.route53Api.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: &dnsName})
+	hostedZones, err := d.route53Api.ListHostedZonesByName(&route53.ListHostedZonesByNameInput{DNSName: &dnsName})
 
 	if err != nil {
 		return nil, err
@@ -52,20 +46,20 @@ func (domainHandler *Route53DomainHandler) GetHostedZoneForDomain(domain string)
 	if *hostedZone.Name != dnsName {
 		return nil, errors.New("Invalid Reply from Route53")
 	}
-	domainHandler.hostedZoneCache[dnsName] = hostedZone
-	fmt.Fprintf(os.Stderr, "[Route53] Cached HostedZone '%v'\n", *hostedZone.Name)
+	d.hostedZoneCache[dnsName] = hostedZone
+	d.logger.WithField("name", *hostedZone.Name).Info("Cached HostedZone")
 
 	return hostedZone, nil
 }
 
-func (domainHandler *Route53DomainHandler) CheckIfResponsible(record string) bool {
-	_, err := domainHandler.GetHostedZoneForDomain(record)
+func (d *Route53DomainManager) CheckIfResponsible(record string) bool {
+	_, err := d.GetHostedZoneForDomain(record)
 	return err == nil
 }
 
 
-func (domainHandler *Route53DomainHandler) UpsertDNSRecord(dnsRecord *DNSRecord) error {
-	hostedZone, err := domainHandler.GetHostedZoneForDomain(dnsRecord.Domain)
+func (d *Route53DomainManager) UpsertDNSRecord(dnsRecord *DNSRecord) error {
+	hostedZone, err := d.GetHostedZoneForDomain(dnsRecord.Domain)
 	if err != nil {
 		return err
 	}
@@ -99,13 +93,13 @@ func (domainHandler *Route53DomainHandler) UpsertDNSRecord(dnsRecord *DNSRecord)
 		HostedZoneId: hostedZone.Id,
 	}
 
-	_, err = domainHandler.route53Api.ChangeResourceRecordSets(batchRequest)
+	_, err = d.route53Api.ChangeResourceRecordSets(batchRequest)
 
 	return err
 
 }
-func (domainHandler *Route53DomainHandler) DeleteDNSRecord(dnsRecord *DNSRecord) error {
-	hostedZone, err := domainHandler.GetHostedZoneForDomain(dnsRecord.Domain);
+func (d *Route53DomainManager) DeleteDNSRecord(dnsRecord *DNSRecord) error {
+	hostedZone, err := d.GetHostedZoneForDomain(dnsRecord.Domain);
 
 	if err != nil {
 		return err
@@ -139,26 +133,26 @@ func (domainHandler *Route53DomainHandler) DeleteDNSRecord(dnsRecord *DNSRecord)
 		HostedZoneId: hostedZone.Id,
 	}
 
-	_, err = domainHandler.route53Api.ChangeResourceRecordSets(batchRequest)
+	_, err = d.route53Api.ChangeResourceRecordSets(batchRequest)
 
 	return err
 }
 
-func (_ *Route53DomainHandler) CreateDNSRecordSingle(dnsRecord *DNSRecordSingle) error {
+func (d *Route53DomainManager) CreateDNSRecordSingle(dnsRecord *DNSRecordSingle) error {
 	panic("Not Implemented")
 }
-func (_ *Route53DomainHandler) DeleteDNSRecordSingle(dnsRecord *DNSRecordSingle) error {
+func (d *Route53DomainManager) DeleteDNSRecordSingle(dnsRecord *DNSRecordSingle) error {
 	panic("Not Implemented")
 }
 
-func (domainHandler *Route53DomainHandler) GetExistingDNSRecords(domain string) ([]*DNSRecord, error) {
-	hostedZone, err := domainHandler.GetHostedZoneForDomain(domain)
+func (d *Route53DomainManager) GetExistingDNSRecords(domain string) ([]*DNSRecord, error) {
+	hostedZone, err := d.GetHostedZoneForDomain(domain)
 
 	if err != nil {
 		return nil, err
 	}
 
-	resourceRecords, _ := domainHandler.route53Api.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{
+	resourceRecords, _ := d.route53Api.ListResourceRecordSets(&route53.ListResourceRecordSetsInput{
 		HostedZoneId: hostedZone.Id,
 	})
 
@@ -195,27 +189,47 @@ func (domainHandler *Route53DomainHandler) GetExistingDNSRecords(domain string) 
 
 	return dnsRecords, nil
 }
-func (_ *Route53DomainHandler) GetExistingDNSRecordsSingle(domain string) ([]*DNSRecordSingle, error) {
+func (d *Route53DomainManager) GetExistingDNSRecordsSingle(domain string) ([]*DNSRecordSingle, error) {
 	panic("Not Implemented")
 }
 
-func (_ *Route53DomainHandler) GetAPIType() string{
+func (d *Route53DomainManager) GetAPIType() string{
 	return "grouped"
 }
 
 
-func (_ *Route53DomainHandler) GetName() string{
+func (d *Route53DomainManager) GetName() string{
 	return "route53"
 }
 
-
-func CreateRoute53RouteHandler(awsAccessKey string, awsSecretKey string) *Route53DomainHandler {
-
-	awsCredentials := credentials.NewStaticCredentials(awsAccessKey, awsSecretKey, "")
+func getRoute53ClientFromCredentials(awsAccessKey, secretAccessKey string) *route53.Route53 {
+	awsCredentials := credentials.NewStaticCredentials(awsAccessKey, secretAccessKey, "")
 	mySession := session.Must(session.NewSession())
 	route53Api := route53.New(mySession, aws.NewConfig().WithCredentials(awsCredentials).WithRegion("eu-central-1"))
+	return route53Api
+}
 
-	route53DomainHandler := Route53DomainHandler{
+func (d *Route53DomainManager) UpdateCredentials(accessKeyId, secretAccessKey string) error {
+
+	currentCredentials, err := d.route53Api.Config.Credentials.Get()
+	if err != nil {
+		return err
+	}
+
+	if currentCredentials.AccessKeyID != accessKeyId || currentCredentials.SecretAccessKey != secretAccessKey {
+		d.logger.Info("Updating Credentials")
+		d.route53Api = getRoute53ClientFromCredentials(accessKeyId, secretAccessKey)
+	} else {
+		d.logger.Info("Skipping Credentials Update, credentials did not change.")
+	}
+
+	return nil
+}
+
+func CreateRoute53RouteManager(awsAccessKey string, secretAccessKey string) *Route53DomainManager {
+
+	route53Api := getRoute53ClientFromCredentials(awsAccessKey, secretAccessKey)
+	route53DomainHandler := Route53DomainManager{
 		route53Api: route53Api,
 		hostedZoneCache: map[string]*route53.HostedZone{},
 		logger: logrus.WithField("domain-handler", "route53"),

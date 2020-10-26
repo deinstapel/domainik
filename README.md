@@ -23,7 +23,40 @@ domainik is configured with CRDs.
 
 We create a resource for every domain manager, which is backed by a secret containing the credentials.
 
-TODO: Add Example for domain manager configuration
+#### Route53
+
+```yaml
+apiVersion: dns.deinstapel.de/v1
+kind: DomainManager
+metadata:
+  name: cloudflare
+spec:
+  route53: 
+    secretRef:
+      name: route53
+      namespace: domains
+```
+
+Therefore you need a fitting secret with the keys `apiMail`, which contains your account mail address, 
+and `apiKey`, which contains your API key.
+
+
+#### Cloudflare
+
+```yaml
+apiVersion: dns.deinstapel.de/v1
+kind: DomainManager
+metadata:
+  name: cloudflare
+spec:
+  cloudflare:
+    secretRef:
+      name: cloudflare
+      namespace: domains
+```
+Therefore you need a fitting secret with the keys `accessKeyId`, which contains your access key id, 
+and `secretAccessKey`, which contains the corresponding secret.
+
 
 ### Domains
 

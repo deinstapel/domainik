@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	github.com/aws/aws-sdk-go v1.35.8
+	github.com/cloudflare/cloudflare-go v0.13.4
 	github.com/ericchiang/k8s v1.2.1-0.20190726154724-08b7bf46703a
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-kit/kit v0.10.0 // indirect

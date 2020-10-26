@@ -10,7 +10,7 @@ type DNSRecordSingle struct {
 	AddrType string
 	Address string
 	Domain string
-	ProviderIdent int
+	ProviderIdent string
 }
 
 type DomainManager interface {
@@ -24,3 +24,4 @@ type DomainManager interface {
 	GetName() string
 	GetAPIType() string
 }
+
