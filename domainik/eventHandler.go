@@ -213,7 +213,7 @@ func (e *EventHandler) UpdateDomainManager(domainManager *DomainManager) error {
 
 	if domainManager.Spec.Cloudflare != nil {
 		cloudflareDomainManager := existingDomainManager.(*domainmanager.CloudflareDomainManager)
-		cloudflareSecret, err := e.GetSecret(domainManager.Spec.Route53.SecretRef)
+		cloudflareSecret, err := e.GetSecret(domainManager.Spec.Cloudflare.SecretRef)
 
 		if err != nil {
 			return err
