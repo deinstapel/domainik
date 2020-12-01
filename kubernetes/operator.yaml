@@ -22,7 +22,7 @@ spec:
       serviceAccountName: domainik
       containers:
         - name: domainik
-          image: deinstapel/domainik:0.1.0
+          image: deinstapel/domainik:0.1.2
 
 ---
 
