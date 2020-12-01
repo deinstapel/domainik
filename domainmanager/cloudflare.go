@@ -10,7 +10,7 @@ import (
 type CloudflareDomainManager struct {
 	zoneCache map[string]string
 	cfApi     *cloudflare.API
-	logger logrus.Entry
+	logger    *logrus.Entry
 }
 
 func (c *CloudflareDomainManager) getZoneIdFromDomain(domain string) (string, error) {
@@ -134,11 +134,12 @@ func CreateCloudflareDomainManager(cfApiMail string, cfApiKey string) (*Cloudfla
 		return nil, err
 	}
 
-	cloudflareDomainHander := CloudflareDomainManager{
+	cloudflareDomainHandler := CloudflareDomainManager{
 		zoneCache: map[string]string{},
 		cfApi:     cfApi,
+		logger:    logrus.WithField("domain-handler", "cloudflare"),
 	}
 
-	return &cloudflareDomainHander, nil
+	return &cloudflareDomainHandler, nil
 
 }
