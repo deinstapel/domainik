@@ -339,7 +339,7 @@ func (e *EventHandler) Reconcile() {
 				continue
 			}
 
-			if !isNodeDisabled(node) {
+			if isNodeDisabled(node) {
 				dLogger.Warn("Omitting " + nodeResourceName + " because it is forcefully disabled with an annotation")
 				continue
 			}
