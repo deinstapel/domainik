@@ -26,6 +26,7 @@ type EventHandler struct {
 
 	logger          *logrus.Entry
 	reconcileQueued bool
+	isDryRun        bool
 }
 
 func isDeleteEvent(eventType string) bool {
@@ -191,7 +192,7 @@ func (e *EventHandler) AddDomainManager(domainManager *DomainManager) error {
 			return err
 		}
 
-		e.domainManager[resourceName] = cloudflareDomainManager
+		e.domainManager[resourceName] = domainmanager.WrapIntoDryRunProtector(cloudflareDomainManager)
 
 	} else if domainManager.Spec.Route53 != nil {
 		route53Secret, err := e.GetSecret(domainManager.Spec.Route53.SecretRef)
@@ -208,7 +209,7 @@ func (e *EventHandler) AddDomainManager(domainManager *DomainManager) error {
 		}
 
 		route53DomainManager := domainmanager.CreateRoute53RouteManager(accessKeyId, secretAccessKey)
-		e.domainManager[resourceName] = route53DomainManager
+		e.domainManager[resourceName] = domainmanager.WrapIntoDryRunProtector(route53DomainManager)
 
 	} else {
 		return errors.New("invalid DomainManager spec")
@@ -548,6 +549,7 @@ func CreateEventHandler(logger *logrus.Entry, client *k8s.Client) *EventHandler 
 		kubernetesClient: client,
 		logger:           logger.WithField("module", "watch-combinator"),
 		reconcileQueued:  false,
+		isDryRun:         false,
 	}
 
 	return &watchComb

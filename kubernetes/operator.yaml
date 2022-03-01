@@ -23,6 +23,9 @@ spec:
       containers:
         - name: domainik
           image: deinstapel/domainik:0.1.2
+          env:
+            - name: DOMAINIK_DRY_RUN
+              value: "true"
 
 ---
 
