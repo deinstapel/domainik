@@ -13,28 +13,28 @@ type DomainManagerDryRun struct {
 
 func (dM *DomainManagerDryRun) CreateDNSRecordSingle(dnsRecord *DNSRecordSingle) error {
 	if dM.isDryRun {
-		dM.logger.Info("Skipping CreateDNSRecordSingle for dnsRecord=%v, because isDryRun is true", dnsRecord.Domain)
+		dM.logger.Infof("Skipping CreateDNSRecordSingle for dnsRecord=%v, because isDryRun is true", dnsRecord.Domain)
 		return nil
 	}
 	return dM.domainManager.CreateDNSRecordSingle(dnsRecord)
 }
 func (dM *DomainManagerDryRun) DeleteDNSRecordSingle(dnsRecord *DNSRecordSingle) error {
 	if dM.isDryRun {
-		dM.logger.Info("Skipping DeleteDNSRecordSingle for dnsRecord=%v, because isDryRun is true", dnsRecord.Domain)
+		dM.logger.Infof("Skipping DeleteDNSRecordSingle for dnsRecord=%v, because isDryRun is true", dnsRecord.Domain)
 		return nil
 	}
 	return dM.domainManager.DeleteDNSRecordSingle(dnsRecord)
 }
 func (dM *DomainManagerDryRun) UpsertDNSRecord(dnsRecord *DNSRecord) error {
 	if dM.isDryRun {
-		dM.logger.Info("Skipping UpsertDNSRecord for dnsRecord=%v, because isDryRun is true", dnsRecord.Domain)
+		dM.logger.Infof("Skipping UpsertDNSRecord for dnsRecord=%v, because isDryRun is true", dnsRecord.Domain)
 		return nil
 	}
 	return dM.domainManager.UpsertDNSRecord(dnsRecord)
 }
 func (dM *DomainManagerDryRun) DeleteDNSRecord(dnsRecord *DNSRecord) error {
 	if dM.isDryRun {
-		dM.logger.Info("Skipping DeleteDNSRecord for dnsRecord=%v, because isDryRun is true", dnsRecord.Domain)
+		dM.logger.Infof("Skipping DeleteDNSRecord for dnsRecord=%v, because isDryRun is true", dnsRecord.Domain)
 		return nil
 	}
 	return dM.domainManager.DeleteDNSRecord(dnsRecord)
