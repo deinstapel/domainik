@@ -92,8 +92,10 @@ func wasNodeSignificantlyUpdated(existingNode *corev1.Node, newNode *corev1.Node
 	// For now, we ignore any other changes than a status change.
 	// Note: ADD and DELETE events are not dropped here. This is only important for UPDATE events.
 
-	hasReadyChange := isNodeReady(existingNode) == isNodeReady(newNode)
-	return !hasReadyChange, nil
+	hasReadyChange := isNodeReady(existingNode) != isNodeReady(newNode)
+	hasForceDisableChange := isNodeDisabled(existingNode) != isNodeDisabled(newNode)
+
+	return hasReadyChange || hasForceDisableChange, nil
 }
 
 func (e *EventHandler) ProcessNode(eventType string, node *corev1.Node) {
