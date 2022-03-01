@@ -17,7 +17,7 @@ kubectl apply -f kubernetes/operator.yaml
 
 ## Configuration
 
-domainik is configured with CRDs.
+domainik is configured with CRDs and Annotations.
 
 ### Domain Managers
 
@@ -78,6 +78,14 @@ spec:
     - "deinstapel.de"
     - "*.deinstapel.de"
 ```
+
+### Annotations
+
+We have some annotations for convenience functions.
+
+#### Disabling a node forcefully.
+
+`dns.deinstapel.de/force-disable-node: true` disables a node forcefully, regardless of their node state.
 
 ## Versions
 

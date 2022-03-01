@@ -32,6 +32,18 @@ func isDeleteEvent(eventType string) bool {
 	return eventType == "DELETED"
 }
 
+func isNodeDisabled(node *corev1.Node) bool {
+	isDisabled := false
+
+	for key, value := range node.Metadata.Annotations {
+		if key == "dns.deinstapel.de/force-disable-node" && value == "true" {
+			isDisabled = true
+		}
+	}
+
+	return isDisabled
+}
+
 func isNodeReady(node *corev1.Node) bool {
 	isReady := false
 
@@ -325,6 +337,11 @@ func (e *EventHandler) Reconcile() {
 				continue
 			}
 
+			if !isNodeDisabled(node) {
+				dLogger.Warn("Omitting " + nodeResourceName + " because it is forcefully disabled with an annotation")
+				continue
+			}
+
 			for k, v := range domain.Spec.NodeSelector {
 				labelVal, labelExists := node.Metadata.Labels[k]
 				if labelExists && labelVal == v {
@@ -493,7 +510,6 @@ func (e *EventHandler) Reconcile() {
 					WithField("recordsToCreate", len(recordsToCreate)).
 					WithField("recordsToRemove", len(recordsToRemove)).
 					Info("Calculated Diff")
-
 
 				for _, recordToCreate := range recordsToCreate {
 					err = responsibleDomainManager.CreateDNSRecordSingle(recordToCreate)
